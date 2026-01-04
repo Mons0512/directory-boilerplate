@@ -1,11 +1,34 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Globe, Github, Twitter, Calendar } from 'lucide-react';
-import { agents } from '../data/agents';
+import { Agent } from '../types/agent';
+import { DataLoader } from '../utils/dataLoader';
 import { Header } from '../components/Header';
 
 export function AgentDetailPage() {
   const { id } = useParams();
-  const agent = agents.find((a) => a.id === id);
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadAgentData() {
+      try {
+        setIsLoading(true);
+        const items = await DataLoader.loadNavigationItems();
+        const foundAgent = items.find((a) => a.id === id);
+        setAgent(foundAgent || null);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load agent data. Please try again later.');
+        console.error('Error loading agent:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadAgentData();
+  }, [id]);
 
   if (!agent) {
     return (
@@ -35,22 +58,12 @@ export function AgentDetailPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              {typeof agent.logo === 'string' ? (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                  <img
-                    src={agent.logo}
-                    alt={`${agent.name} logo`}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              ) : (
-                <div
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
-                  style={{ backgroundColor: agent.logo?.color || '#4B5563' }}
-                >
-                  {agent.logo?.initials || agent.name.slice(0, 2).toUpperCase()}
-                </div>
-              )}
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center text-2xl font-bold text-white"
+                style={{ backgroundColor: agent.logo.bgColor || '#4B5563' }}
+              >
+                {agent.logo.text || agent.name.slice(0, 2).toUpperCase()}
+              </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">{agent.name}</h1>
                 <div className="flex flex-wrap gap-2">
